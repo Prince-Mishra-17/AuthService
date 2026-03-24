@@ -1,6 +1,7 @@
 package authservice.service;
 
 import authservice.entities.UserInfo;
+import authservice.eventProducer.UserInfoProducer;
 import authservice.model.UserInfoDto;
 import authservice.repository.RefreshTokenRepository;
 import authservice.repository.UserRepository;
@@ -29,6 +30,9 @@ public class UserDetailsServiceImplementation implements UserDetailsService {
     @Autowired
     private final PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private final UserInfoProducer userInfoProducer;
+
     @Override
     public UserDetails loadUserByUsername (String username) throws UsernameNotFoundException{
 
@@ -54,7 +58,10 @@ public class UserDetailsServiceImplementation implements UserDetailsService {
         }
 
         String userId = UUID.randomUUID().toString();
-        userRepository.save(new UserInfo(userId, userInfoDto.getUsername(), userInfoDto.getPassword(), new HashSet<>()));
+        UserInfo userInfo = new UserInfo(userId,userInfoDto.getUsername(), userInfoDto.getPassword(),new HashSet<>());
+        userRepository.save(userInfo);
+        //pushEventToQueue
+        userInfoProducer.sendEventToKafka(UserInfoDto.builder().firstname("abc").lastName("def").email("dawn").build());
         return true;
     }
 
